@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Learning Game</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <header>
+        <h1>Word Learning Game</h1>
+        <button id="startGameBtn">Start Game</button>
+    </header>
+    <main>
+        <section id="categorySection" class="hidden">
+            <label for="categories">Choose a word category:</label>
+            <select id="categories">
+                <option value="animals">Animals</option>
+                <option value="colors">Colors</option>
+                <option value="fruits">Fruits</option>
+            </select>
+            <button id="chooseCategoryBtn">Start Learning</button>
+        </section>
+        <section id="gameSection" class="hidden">
+            <h2 id="question"></h2>
+            <div id="choices"></div>
+            <p id="feedback"></p>
+        </section>
+    </main>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const startGameBtn = document.getElementById("startGameBtn");
+            const categorySection = document.getElementById("categorySection");
+            const chooseCategoryBtn = document.getElementById("chooseCategoryBtn");
+            const categories = document.getElementById("categories");
+            const gameSection = document.getElementById("gameSection");
+            const questionEl = document.getElementById("question");
+            const choicesEl = document.getElementById("choices");
+            const feedbackEl = document.getElementById("feedback");
+
+            let currentWordIndex = 0;
+            let selectedCategory = "";
+            let wordsList = [];
+
+            startGameBtn.addEventListener("click", () => {
+                categorySection.classList.remove("hidden");
+                startGameBtn.classList.add("hidden");
+            });
+
+            chooseCategoryBtn.addEventListener("click", async () => {
+                selectedCategory = categories.value;
+                const response = await fetch("/start_game", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ category: selectedCategory }),
+                });
+                const data = await response.json();
+                wordsList = data.words;
+                currentWordIndex = 0;
+                categorySection.classList.add("hidden");
+                gameSection.classList.remove("hidden");
+                loadWord();
+            });
+
+            function loadWord() {
+                const word = wordsList[currentWordIndex];
+                questionEl.textContent = `Which category does "${word}" belong to?`;
+                choicesEl.innerHTML = "";
+                for (const category in wordsList) {
+                    const btn = document.createElement("button");
+                    btn.textContent = category;
+                    btn.addEventListener("click", () => checkAnswer(category));
+                    choicesEl.appendChild(btn);
+                }
+            }
+
+            async function checkAnswer(category) {
+                const word = wordsList[currentWordIndex];
+                const response = await fetch("/check_answer", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ category: selectedCategory, word: word, answer: category }),
+                });
+                const data = await response.json();
+                feedbackEl.textContent = data.result;
+                if (data.result === "Correct!") {
+                    feedbackEl.style.color = "green";
+                    currentWordIndex++;
+                    if (currentWordIndex < wordsList.length) {
+                        loadWord();
+                    } else {
+                        feedbackEl.textContent = "You completed the game!";
+                        feedbackEl.style.color = "blue";
+                    }
+                } else {
+                    feedbackEl.style.color = "red";
+                }
+            }
+        });
+    </script>
+</body>
+</html>
+
