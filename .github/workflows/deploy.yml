@@ -26,6 +26,9 @@ jobs:
         run: |
           npm run build  # Run your build process (optional step if you use bundlers like Webpack).
 
+      - name: Build Site
+        run: echo "Building site..."
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3  # GitHub Action to deploy to GitHub Pages.
         with:
